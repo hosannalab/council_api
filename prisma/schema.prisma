@@ -1,0 +1,466 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ----- Enums -----
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+}
+
+enum ChurchStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum MinisterRank {
+  PASTOR
+  PRESBYTER
+  DEACON
+  EVANGELIST
+  OTHER
+}
+
+enum MinisterStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum FinanceType {
+  TITHE
+  OFFERING
+  MISC_INCOME
+  EXPENSE
+}
+
+enum FinanceKind {
+  INCOME
+  EXPENSE
+}
+
+enum ActivityScope {
+  COUNCIL
+  CHURCH
+}
+
+enum ActivityStatus {
+  SCHEDULED
+  CANCELLED
+  COMPLETED
+}
+
+enum ActivityAudience {
+  ALL
+  PASTORS_ONLY
+  LEADERS_ONLY
+}
+
+enum CredentialStatus {
+  ACTIVE
+  SUSPENDED
+  EXPIRED
+  REVOKED
+}
+
+// ----- Multi-tenant & Auth -----
+
+model Tenant {
+  id        String       @id @default(cuid())
+  name      String
+  slug      String       @unique
+  status    TenantStatus @default(ACTIVE)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  users                User[]
+  churches             Church[]
+  ministers            Minister[]
+  members              Member[]
+  financeCategories    FinanceCategory[]
+  financeTransactions  FinanceTransaction[]
+  baptisms             Baptism[]
+  childDedications     ChildDedication[]
+  activities           Activity[]
+  pastorCredentials    PastorCredential[]
+  auditLogs            AuditLog[]
+}
+
+model User {
+  id               String    @id @default(cuid())
+  tenantId         String?
+  email            String    @unique
+  passwordHash     String
+  fullName         String
+  isActive         Boolean   @default(true)
+  currentSessionId String?
+  tokenVersion     Int       @default(0)
+  lastLoginAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  tenant              Tenant?              @relation(fields: [tenantId], references: [id])
+  roles               UserRole[]
+  minister            Minister?
+  ministerComments    MinisterComment[]    @relation("MinisterCommentAuthor")
+  memberComments      MemberComment[]      @relation("MemberCommentAuthor")
+  ministerAssignments MinisterAssignment[] @relation("MinisterAssignmentCreator")
+  financeTransactions FinanceTransaction[]
+  pastorCredentials   PastorCredential[]   @relation("CredentialCreator")
+  auditLogs           AuditLog[]
+
+  @@index([tenantId])
+}
+
+// ----- RBAC -----
+
+model Role {
+  id          String  @id @default(cuid())
+  tenantId    String?
+  name        String
+  description String?
+
+  permissions RolePermission[]
+  users       UserRole[]
+
+  @@unique([tenantId, name])
+}
+
+model Permission {
+  id    String @id @default(cuid())
+  key   String @unique
+  label String
+
+  roles RolePermission[]
+}
+
+model UserRole {
+  userId String
+  roleId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+// ----- Iglesias -----
+
+model Church {
+  id              String       @id @default(cuid())
+  tenantId        String
+  name            String
+  address         String?
+  city            String?
+  phone           String?
+  status          ChurchStatus @default(ACTIVE)
+  currentPastorId String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  tenant              Tenant                   @relation(fields: [tenantId], references: [id])
+  currentPastor       Minister?                @relation("ChurchCurrentPastor", fields: [currentPastorId], references: [id])
+  members             Member[]
+  ministerAssignments MinisterAssignment[]
+  memberHistory       MemberChurchHistory[]
+  financeTransactions FinanceTransaction[]
+  baptisms            Baptism[]
+  childDedications    ChildDedication[]
+  activities          Activity[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+}
+
+// ----- Ministros -----
+
+model Minister {
+  id           String         @id @default(cuid())
+  tenantId     String
+  fullName     String
+  identityDocument String
+  rank         MinisterRank
+  ordinationAt DateTime?
+  status       MinisterStatus @default(ACTIVE)
+  userId       String?        @unique
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  tenant              Tenant               @relation(fields: [tenantId], references: [id])
+  user                User?                @relation(fields: [userId], references: [id])
+  assignments         MinisterAssignment[]
+  comments            MinisterComment[]
+  currentChurches     Church[]             @relation("ChurchCurrentPastor")
+  baptismsOfficiated  Baptism[]            @relation("BaptismOfficiant")
+  dedicationsOfficiated ChildDedication[]  @relation("DedicationOfficiant")
+  credentials         PastorCredential[]
+
+  @@unique([tenantId, identityDocument])
+  @@index([tenantId])
+  @@index([tenantId, status])
+}
+
+model MinisterAssignment {
+  id          String    @id @default(cuid())
+  tenantId    String
+  ministerId  String
+  churchId    String
+  startedAt   DateTime
+  endedAt     DateTime?
+  reason      String?
+  createdById String
+  createdAt   DateTime  @default(now())
+
+  minister  Minister @relation(fields: [ministerId], references: [id])
+  church    Church   @relation(fields: [churchId], references: [id])
+  createdBy User     @relation("MinisterAssignmentCreator", fields: [createdById], references: [id])
+
+  @@index([tenantId, ministerId])
+  @@index([tenantId, churchId])
+}
+
+model MinisterComment {
+  id         String   @id @default(cuid())
+  tenantId   String
+  ministerId String
+  authorId   String
+  body       String
+  createdAt  DateTime @default(now())
+
+  minister Minister @relation(fields: [ministerId], references: [id])
+  author   User     @relation("MinisterCommentAuthor", fields: [authorId], references: [id])
+
+  @@index([tenantId, ministerId])
+}
+
+// ----- Miembros -----
+
+model Member {
+  id        String    @id @default(cuid())
+  tenantId  String
+  churchId  String
+  fullName  String
+  identityDocument String
+  birthDate DateTime?
+  phone     String?
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  tenant   Tenant                @relation(fields: [tenantId], references: [id])
+  church   Church                @relation(fields: [churchId], references: [id])
+  history  MemberChurchHistory[]
+  comments MemberComment[]
+  logs     MemberLog[]
+  baptisms Baptism[]
+
+  @@unique([tenantId, identityDocument])
+  @@index([tenantId, churchId])
+  @@index([tenantId, isActive])
+}
+
+model MemberChurchHistory {
+  id        String    @id @default(cuid())
+  tenantId  String
+  memberId  String
+  churchId  String
+  startedAt DateTime
+  endedAt   DateTime?
+  reason    String?
+
+  member Member @relation(fields: [memberId], references: [id])
+  church Church @relation(fields: [churchId], references: [id])
+
+  @@index([tenantId, memberId])
+}
+
+model MemberComment {
+  id        String   @id @default(cuid())
+  tenantId  String
+  memberId  String
+  authorId  String
+  body      String
+  createdAt DateTime @default(now())
+
+  member Member @relation(fields: [memberId], references: [id])
+  author User   @relation("MemberCommentAuthor", fields: [authorId], references: [id])
+
+  @@index([tenantId, memberId])
+}
+
+model MemberLog {
+  id        String   @id @default(cuid())
+  tenantId  String
+  memberId  String
+  event     String
+  detail    String?
+  actorId   String?
+  createdAt DateTime @default(now())
+
+  member Member @relation(fields: [memberId], references: [id])
+
+  @@index([tenantId, memberId])
+}
+
+// ----- Finanzas -----
+
+model FinanceCategory {
+  id       String      @id @default(cuid())
+  tenantId String
+  name     String
+  kind     FinanceKind
+
+  tenant       Tenant               @relation(fields: [tenantId], references: [id])
+  transactions FinanceTransaction[]
+
+  @@unique([tenantId, name])
+}
+
+model FinanceTransaction {
+  id            String      @id @default(cuid())
+  tenantId      String
+  churchId      String
+  type          FinanceType
+  amount        Decimal     @db.Decimal(12, 2)
+  date          DateTime
+  categoryId    String?
+  description   String?
+  justification String?
+  createdById   String
+  createdAt     DateTime    @default(now())
+
+  tenant    Tenant           @relation(fields: [tenantId], references: [id])
+  church    Church           @relation(fields: [churchId], references: [id])
+  category  FinanceCategory? @relation(fields: [categoryId], references: [id])
+  createdBy User             @relation(fields: [createdById], references: [id])
+
+  @@index([tenantId, churchId, date])
+  @@index([tenantId, type])
+}
+
+// ----- Sacramentos -----
+
+model Baptism {
+  id           String   @id @default(cuid())
+  tenantId     String
+  churchId     String
+  personName   String
+  memberId     String?
+  place        String?
+  date         DateTime
+  officiantId  String?
+  participants Json?
+  notes        String?
+  createdAt    DateTime @default(now())
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id])
+  church    Church    @relation(fields: [churchId], references: [id])
+  member    Member?   @relation(fields: [memberId], references: [id])
+  officiant Minister? @relation("BaptismOfficiant", fields: [officiantId], references: [id])
+
+  @@index([tenantId, churchId, date])
+}
+
+model ChildDedication {
+  id          String   @id @default(cuid())
+  tenantId    String
+  churchId    String
+  childName   String
+  parents     String?
+  godparents  String?
+  place       String?
+  date        DateTime
+  officiantId String?
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id])
+  church    Church    @relation(fields: [churchId], references: [id])
+  officiant Minister? @relation("DedicationOfficiant", fields: [officiantId], references: [id])
+
+  @@index([tenantId, churchId, date])
+}
+
+// ----- Actividades -----
+
+model Activity {
+  id            String         @id @default(cuid())
+  tenantId      String
+  scope         ActivityScope
+  churchId      String?
+  title         String
+  description   String?
+  location      String?
+  startAt       DateTime
+  endAt         DateTime?
+  status        ActivityStatus   @default(SCHEDULED)
+  audience      ActivityAudience @default(ALL)
+  notifyByEmail Boolean          @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id])
+  church Church? @relation(fields: [churchId], references: [id])
+
+  @@index([tenantId, scope])
+  @@index([tenantId, startAt])
+}
+
+// ----- Credenciales -----
+
+model PastorCredential {
+  id           String           @id @default(cuid())
+  tenantId     String
+  ministerId   String
+  credentialNo String           @unique
+  photoUrl     String?
+  issuedAt     DateTime
+  expiresAt    DateTime?
+  status       CredentialStatus @default(ACTIVE)
+  verifyToken  String           @unique
+  createdById  String
+  createdAt    DateTime         @default(now())
+
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  minister  Minister @relation(fields: [ministerId], references: [id])
+  createdBy User     @relation("CredentialCreator", fields: [createdById], references: [id])
+
+  @@index([tenantId, ministerId])
+}
+
+// ----- Auditoría -----
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  tenantId  String?
+  actorId   String?
+  action    String
+  entity    String
+  entityId  String?
+  before    Json?
+  after     Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id])
+  actor  User?   @relation(fields: [actorId], references: [id])
+
+  @@index([tenantId, createdAt])
+  @@index([entity, entityId])
+}
