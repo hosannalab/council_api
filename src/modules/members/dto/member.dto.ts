@@ -2,11 +2,14 @@ import { Type } from 'class-transformer';
 import {
   IsBoolean,
   IsDateString,
+  IsEmail,
+  IsEnum,
   IsOptional,
   IsString,
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { MemberMaritalStatus } from '@prisma/client';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 import { IsEntityId } from '../../../common/validators/is-entity-id.decorator';
@@ -34,22 +37,71 @@ export class ListMembersQueryDto extends PaginationQueryDto {
   createdTo?: string;
 }
 
-export class CreateMemberDto {
+class MemberProfileFieldsDto {
   @ApiProperty()
   @IsString()
   @MinLength(2)
   @MaxLength(120)
   fullName: string;
 
-  @ApiProperty({ description: 'Documento de identidad único en el concilio' })
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  firstName?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  lastName?: string;
+
+  @ApiProperty({ description: 'Documento de identidad unico en el concilio' })
   @IsString()
   @MinLength(3)
   @MaxLength(30)
   identityDocument: string;
 
-  @ApiProperty()
-  @IsEntityId()
-  churchId: string;
+  @ApiPropertyOptional({ enum: MemberMaritalStatus })
+  @IsOptional()
+  @IsEnum(MemberMaritalStatus)
+  maritalStatus?: MemberMaritalStatus;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  profession?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  workplace?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(180)
+  addressLine?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  neighborhood?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  sector?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsEmail()
+  @MaxLength(160)
+  email?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -61,6 +113,34 @@ export class CreateMemberDto {
   @IsString()
   @MaxLength(30)
   phone?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  mobilePhone?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsDateString()
+  conversionDate?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsDateString()
+  baptismDate?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  workGroup?: string;
+}
+
+export class CreateMemberDto extends MemberProfileFieldsDto {
+  @ApiProperty()
+  @IsEntityId()
+  churchId: string;
 }
 
 export class UpdateMemberDto {
@@ -73,6 +153,59 @@ export class UpdateMemberDto {
 
   @ApiPropertyOptional()
   @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  firstName?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  lastName?: string;
+
+  @ApiPropertyOptional({ enum: MemberMaritalStatus })
+  @IsOptional()
+  @IsEnum(MemberMaritalStatus)
+  maritalStatus?: MemberMaritalStatus;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  profession?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  workplace?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(180)
+  addressLine?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  neighborhood?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  sector?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsEmail()
+  @MaxLength(160)
+  email?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsDateString()
   birthDate?: string;
 
@@ -81,6 +214,28 @@ export class UpdateMemberDto {
   @IsString()
   @MaxLength(30)
   phone?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  mobilePhone?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsDateString()
+  conversionDate?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsDateString()
+  baptismDate?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  workGroup?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

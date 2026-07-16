@@ -100,10 +100,7 @@ export class MembersService {
           data: {
             tenantId: scope.tenantId,
             churchId: dto.churchId,
-            fullName: dto.fullName.trim(),
-            identityDocument: dto.identityDocument.trim(),
-            birthDate: dto.birthDate ? new Date(dto.birthDate) : undefined,
-            phone: dto.phone,
+            ...this.memberCreateData(dto),
           },
           include: memberInclude,
         });
@@ -154,11 +151,7 @@ export class MembersService {
     const updated = await this.prisma.$transaction(async (tx) => {
       const result = await tx.member.update({
         where: { id },
-        data: {
-          fullName: dto.fullName?.trim(),
-          birthDate: dto.birthDate ? new Date(dto.birthDate) : undefined,
-          phone: dto.phone,
-        },
+        data: this.memberUpdateData(dto),
         include: memberInclude,
       });
 
@@ -220,9 +213,7 @@ export class MembersService {
         where: { id },
         data: {
           isActive: true,
-          fullName: dto?.fullName?.trim(),
-          birthDate: dto?.birthDate ? new Date(dto.birthDate) : undefined,
-          phone: dto?.phone,
+          ...this.memberUpdateData(dto),
         },
         include: memberInclude,
       });
@@ -444,11 +435,68 @@ export class MembersService {
     await tx.memberLog.create({ data });
   }
 
+  private text(value: string | undefined) {
+    const trimmed = value?.trim();
+    return trimmed ? trimmed : undefined;
+  }
+
+  private date(value: string | undefined) {
+    return value ? new Date(value) : undefined;
+  }
+
+  private memberCreateData(dto: CreateMemberDto) {
+    return {
+      fullName: dto.fullName.trim(),
+      firstName: this.text(dto.firstName),
+      lastName: this.text(dto.lastName),
+      identityDocument: dto.identityDocument.trim(),
+      maritalStatus: dto.maritalStatus,
+      profession: this.text(dto.profession),
+      workplace: this.text(dto.workplace),
+      addressLine: this.text(dto.addressLine),
+      neighborhood: this.text(dto.neighborhood),
+      sector: this.text(dto.sector),
+      email: this.text(dto.email),
+      birthDate: this.date(dto.birthDate),
+      phone: this.text(dto.phone),
+      mobilePhone: this.text(dto.mobilePhone),
+      conversionDate: this.date(dto.conversionDate),
+      baptismDate: this.date(dto.baptismDate),
+      workGroup: this.text(dto.workGroup),
+    };
+  }
+
+  private memberUpdateData(dto?: UpdateMemberDto): Prisma.MemberUpdateInput {
+    return {
+      fullName: dto?.fullName?.trim(),
+      firstName: this.text(dto?.firstName),
+      lastName: this.text(dto?.lastName),
+      maritalStatus: dto?.maritalStatus,
+      profession: this.text(dto?.profession),
+      workplace: this.text(dto?.workplace),
+      addressLine: this.text(dto?.addressLine),
+      neighborhood: this.text(dto?.neighborhood),
+      sector: this.text(dto?.sector),
+      email: this.text(dto?.email),
+      birthDate: this.date(dto?.birthDate),
+      phone: this.text(dto?.phone),
+      mobilePhone: this.text(dto?.mobilePhone),
+      conversionDate: this.date(dto?.conversionDate),
+      baptismDate: this.date(dto?.baptismDate),
+      workGroup: this.text(dto?.workGroup),
+    };
+  }
+
   private toListResponse(member: {
     id: string;
     fullName: string;
+    firstName: string | null;
+    lastName: string | null;
     identityDocument: string;
+    maritalStatus: string | null;
+    email: string | null;
     phone: string | null;
+    mobilePhone: string | null;
     isActive: boolean;
     createdAt: Date;
     church: { id: string; name: string; city: string | null };
@@ -456,8 +504,13 @@ export class MembersService {
     return {
       id: member.id,
       fullName: member.fullName,
+      firstName: member.firstName,
+      lastName: member.lastName,
       identityDocument: member.identityDocument,
+      maritalStatus: member.maritalStatus,
+      email: member.email,
       phone: member.phone,
+      mobilePhone: member.mobilePhone,
       isActive: member.isActive,
       church: member.church,
       createdAt: member.createdAt,
@@ -468,9 +521,22 @@ export class MembersService {
     id: string;
     tenantId: string;
     fullName: string;
+    firstName: string | null;
+    lastName: string | null;
     identityDocument: string;
+    maritalStatus: string | null;
+    profession: string | null;
+    workplace: string | null;
+    addressLine: string | null;
+    neighborhood: string | null;
+    sector: string | null;
+    email: string | null;
     birthDate: Date | null;
     phone: string | null;
+    mobilePhone: string | null;
+    conversionDate: Date | null;
+    baptismDate: Date | null;
+    workGroup: string | null;
     isActive: boolean;
     churchId: string;
     createdAt: Date;
@@ -481,9 +547,22 @@ export class MembersService {
       id: member.id,
       tenantId: member.tenantId,
       fullName: member.fullName,
+      firstName: member.firstName,
+      lastName: member.lastName,
       identityDocument: member.identityDocument,
+      maritalStatus: member.maritalStatus,
+      profession: member.profession,
+      workplace: member.workplace,
+      addressLine: member.addressLine,
+      neighborhood: member.neighborhood,
+      sector: member.sector,
+      email: member.email,
       birthDate: member.birthDate,
       phone: member.phone,
+      mobilePhone: member.mobilePhone,
+      conversionDate: member.conversionDate,
+      baptismDate: member.baptismDate,
+      workGroup: member.workGroup,
       isActive: member.isActive,
       churchId: member.churchId,
       church: member.church,

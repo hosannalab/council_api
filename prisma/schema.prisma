@@ -69,6 +69,13 @@ enum CredentialStatus {
   REVOKED
 }
 
+enum MemberMaritalStatus {
+  MARRIED
+  SINGLE
+  WIDOWED
+  OTHER
+}
+
 // ----- Multi-tenant & Auth -----
 
 model Tenant {
@@ -256,9 +263,22 @@ model Member {
   tenantId  String
   churchId  String
   fullName  String
+  firstName String?
+  lastName  String?
   identityDocument String
+  maritalStatus MemberMaritalStatus?
+  profession String?
+  workplace String?
+  addressLine String?
+  neighborhood String?
+  sector String?
+  email String?
   birthDate DateTime?
   phone     String?
+  mobilePhone String?
+  conversionDate DateTime?
+  baptismDate DateTime?
+  workGroup String?
   isActive  Boolean   @default(true)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
