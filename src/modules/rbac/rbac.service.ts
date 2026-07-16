@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { PaginationQueryDto, paginate, paginatedResult } from '../../common/dto/pagination-query.dto';
+import {
+  PaginationQueryDto,
+  paginate,
+  paginatedResult,
+} from '../../common/dto/pagination-query.dto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { extractPermissions } from './rbac.utils';
 
@@ -40,8 +44,18 @@ export class RbacService {
     const where = query.search?.trim()
       ? {
           OR: [
-            { key: { contains: query.search.trim(), mode: 'insensitive' as const } },
-            { label: { contains: query.search.trim(), mode: 'insensitive' as const } },
+            {
+              key: {
+                contains: query.search.trim(),
+                mode: 'insensitive' as const,
+              },
+            },
+            {
+              label: {
+                contains: query.search.trim(),
+                mode: 'insensitive' as const,
+              },
+            },
           ],
         }
       : {};

@@ -39,7 +39,10 @@ export class ActivitiesController {
 
   @Permissions('activities:read')
   @Get()
-  findAll(@CurrentUser() user: AuthUser, @Query() query: ListActivitiesQueryDto) {
+  findAll(
+    @CurrentUser() user: AuthUser,
+    @Query() query: ListActivitiesQueryDto,
+  ) {
     return this.activitiesService.findAll(user, query);
   }
 

@@ -13,7 +13,11 @@ import {
   paginatedResult,
 } from '../../common/dto/pagination-query.dto';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateUserDto, ListUsersQueryDto, UpdateUserDto } from './dto/user.dto';
+import {
+  CreateUserDto,
+  ListUsersQueryDto,
+  UpdateUserDto,
+} from './dto/user.dto';
 import { isSuperAdmin } from './rbac.utils';
 
 const userInclude = {
@@ -39,8 +43,18 @@ export class UsersService {
     if (query.search?.trim()) {
       Object.assign(where, {
         OR: [
-          { fullName: { contains: query.search.trim(), mode: 'insensitive' as const } },
-          { email: { contains: query.search.trim(), mode: 'insensitive' as const } },
+          {
+            fullName: {
+              contains: query.search.trim(),
+              mode: 'insensitive' as const,
+            },
+          },
+          {
+            email: {
+              contains: query.search.trim(),
+              mode: 'insensitive' as const,
+            },
+          },
         ],
       });
     }
@@ -65,9 +79,7 @@ export class UsersService {
       select: { id: true, userId: true },
     });
     const ministerByUser = new Map(
-      ministers
-        .filter((m) => m.userId)
-        .map((m) => [m.userId!, m.id] as const),
+      ministers.filter((m) => m.userId).map((m) => [m.userId!, m.id] as const),
     );
 
     return paginatedResult(
@@ -147,7 +159,11 @@ export class UsersService {
 
       if (dto.ministerId !== undefined) {
         if (dto.ministerId) {
-          await this.validateMinisterForLink(user.tenantId!, dto.ministerId, id);
+          await this.validateMinisterForLink(
+            user.tenantId!,
+            dto.ministerId,
+            id,
+          );
         }
         await this.unlinkMinisterFromUser(tx, user.tenantId!, id);
         if (dto.ministerId) {

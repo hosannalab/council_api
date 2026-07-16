@@ -64,7 +64,12 @@ export class BaptismsService {
   async create(actor: AuthUser, dto: CreateBaptismDto) {
     const scope = await this.scopeService.resolveScope(actor);
     this.scopeService.assertChurchInScope(scope, dto.churchId);
-    await this.validateReferences(scope.tenantId, dto.churchId, dto.memberId, dto.officiantId);
+    await this.validateReferences(
+      scope.tenantId,
+      dto.churchId,
+      dto.memberId,
+      dto.officiantId,
+    );
 
     const baptism = await this.prisma.baptism.create({
       data: {
@@ -88,7 +93,11 @@ export class BaptismsService {
     const existing = await this.getScopedBaptism(actor, id);
 
     if (dto.memberId) {
-      await this.validateMember(existing.tenantId, existing.churchId, dto.memberId);
+      await this.validateMember(
+        existing.tenantId,
+        existing.churchId,
+        dto.memberId,
+      );
     }
     if (dto.officiantId) {
       await this.validateOfficiant(existing.tenantId, dto.officiantId);
@@ -126,7 +135,10 @@ export class BaptismsService {
     if (query.officiantId) where.officiantId = query.officiantId;
 
     if (query.search?.trim()) {
-      where.personName = { contains: query.search!.trim(), mode: 'insensitive' };
+      where.personName = {
+        contains: query.search.trim(),
+        mode: 'insensitive',
+      };
     }
 
     if (query.dateFrom || query.dateTo) {
@@ -157,11 +169,16 @@ export class BaptismsService {
     }
   }
 
-  private async validateMember(tenantId: string, churchId: string, memberId: string) {
+  private async validateMember(
+    tenantId: string,
+    churchId: string,
+    memberId: string,
+  ) {
     const member = await this.prisma.member.findFirst({
       where: { id: memberId, tenantId, churchId },
     });
-    if (!member) throw new BadRequestException('Member not found in this church');
+    if (!member)
+      throw new BadRequestException('Member not found in this church');
   }
 
   private async validateOfficiant(tenantId: string, officiantId: string) {

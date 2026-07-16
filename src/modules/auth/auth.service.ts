@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -96,9 +93,12 @@ export class AuthService {
     let payload: CouncilJwtPayload;
 
     try {
-      payload = await this.jwtService.verifyAsync<CouncilJwtPayload>(refreshToken, {
-        secret: this.configService.getOrThrow<string>('jwt.refreshSecret'),
-      });
+      payload = await this.jwtService.verifyAsync<CouncilJwtPayload>(
+        refreshToken,
+        {
+          secret: this.configService.getOrThrow<string>('jwt.refreshSecret'),
+        },
+      );
     } catch {
       throw new UnauthorizedException('Invalid refresh token');
     }
@@ -107,9 +107,15 @@ export class AuthService {
       throw new UnauthorizedException('Invalid token type');
     }
 
-    const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+    });
 
-    if (!user || !user.isActive || user.currentSessionId !== payload.sessionId) {
+    if (
+      !user ||
+      !user.isActive ||
+      user.currentSessionId !== payload.sessionId
+    ) {
       throw new UnauthorizedException('Session expired or replaced');
     }
 
@@ -190,11 +196,15 @@ export class AuthService {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(accessPayload, {
         secret: this.configService.getOrThrow<string>('jwt.accessSecret'),
-        expiresIn: this.configService.getOrThrow<number>('jwt.accessTtlSeconds'),
+        expiresIn: this.configService.getOrThrow<number>(
+          'jwt.accessTtlSeconds',
+        ),
       }),
       this.jwtService.signAsync(refreshPayload, {
         secret: this.configService.getOrThrow<string>('jwt.refreshSecret'),
-        expiresIn: this.configService.getOrThrow<number>('jwt.refreshTtlSeconds'),
+        expiresIn: this.configService.getOrThrow<number>(
+          'jwt.refreshTtlSeconds',
+        ),
       }),
     ]);
 

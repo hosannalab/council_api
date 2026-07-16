@@ -15,4 +15,5 @@ export class PermissionsController {
   @Get()
   findAll(@Query() query: PaginationQueryDto) {
     return this.rbacService.listPermissions(query);
-  }}
+  }
+}

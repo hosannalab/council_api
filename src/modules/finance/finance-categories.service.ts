@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -7,8 +6,15 @@ import {
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 import { PrismaService } from '../../prisma/prisma.service';
 import { isSuperAdmin } from '../rbac/rbac.utils';
-import { paginate, paginatedResult } from '../../common/dto/pagination-query.dto';
-import { CreateCategoryDto, ListCategoriesQueryDto, UpdateCategoryDto } from './dto/finance.dto';
+import {
+  paginate,
+  paginatedResult,
+} from '../../common/dto/pagination-query.dto';
+import {
+  CreateCategoryDto,
+  ListCategoriesQueryDto,
+  UpdateCategoryDto,
+} from './dto/finance.dto';
 import { FinanceScopeService } from './finance-scope.service';
 
 @Injectable()
@@ -26,7 +32,12 @@ export class FinanceCategoriesService {
       tenantId: scope.tenantId,
       ...(query.kind ? { kind: query.kind } : {}),
       ...(query.search?.trim()
-        ? { name: { contains: query.search.trim(), mode: 'insensitive' as const } }
+        ? {
+            name: {
+              contains: query.search.trim(),
+              mode: 'insensitive' as const,
+            },
+          }
         : {}),
     };
 
@@ -72,7 +83,9 @@ export class FinanceCategoriesService {
   }
 
   private async getScopedCategory(actor: AuthUser, id: string) {
-    const category = await this.prisma.financeCategory.findUnique({ where: { id } });
+    const category = await this.prisma.financeCategory.findUnique({
+      where: { id },
+    });
     if (!category) throw new NotFoundException('Category not found');
 
     const scope = await this.scopeService.resolveScope(actor);

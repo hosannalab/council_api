@@ -41,7 +41,10 @@ export class CredentialsController {
 
   @Permissions('credentials:read')
   @Get()
-  findAll(@CurrentUser() user: AuthUser, @Query() query: ListCredentialsQueryDto) {
+  findAll(
+    @CurrentUser() user: AuthUser,
+    @Query() query: ListCredentialsQueryDto,
+  ) {
     return this.credentialsService.findAll(user, query);
   }
 

@@ -66,7 +66,9 @@ export class ActivitiesService {
     if (dto.churchId) {
       await this.validateChurch(scope.tenantId, dto.churchId);
       if (scope.churchId && scope.churchId !== dto.churchId) {
-        throw new ForbiddenException('You can only create activities for your assigned church');
+        throw new ForbiddenException(
+          'You can only create activities for your assigned church',
+        );
       }
     }
 
@@ -94,9 +96,7 @@ export class ActivitiesService {
     const existing = await this.getScopedActivity(actor, id);
     const nextScope = dto.scope ?? existing.scope;
     const nextChurchId =
-      dto.churchId !== undefined
-        ? dto.churchId
-        : existing.churchId;
+      dto.churchId !== undefined ? dto.churchId : existing.churchId;
 
     this.assertCanManageScope(actor, nextScope, nextChurchId ?? undefined);
     this.validateScopePayload(nextScope, nextChurchId ?? undefined);
@@ -109,13 +109,17 @@ export class ActivitiesService {
       where: { id },
       data: {
         scope: dto.scope,
-        churchId:
-          nextScope === ActivityScope.CHURCH ? nextChurchId : null,
+        churchId: nextScope === ActivityScope.CHURCH ? nextChurchId : null,
         title: dto.title?.trim(),
         description: dto.description?.trim(),
         location: dto.location?.trim(),
         startAt: dto.startAt ? new Date(dto.startAt) : undefined,
-        endAt: dto.endAt === null ? null : dto.endAt ? new Date(dto.endAt) : undefined,
+        endAt:
+          dto.endAt === null
+            ? null
+            : dto.endAt
+              ? new Date(dto.endAt)
+              : undefined,
         status: dto.status,
         audience: dto.audience,
         notifyByEmail: dto.notifyByEmail,
@@ -135,7 +139,10 @@ export class ActivitiesService {
 
     if (scope.churchId) {
       where.OR = [
-        { scope: ActivityScope.COUNCIL, audience: { in: ['ALL', 'PASTORS_ONLY'] } },
+        {
+          scope: ActivityScope.COUNCIL,
+          audience: { in: ['ALL', 'PASTORS_ONLY'] },
+        },
         { scope: ActivityScope.CHURCH, churchId: scope.churchId },
       ];
     }
@@ -178,7 +185,8 @@ export class ActivitiesService {
 
     if (scope.churchId) {
       const allowed =
-        (activity.scope === ActivityScope.COUNCIL && ['ALL', 'PASTORS_ONLY'].includes(activity.audience)) ||
+        (activity.scope === ActivityScope.COUNCIL &&
+          ['ALL', 'PASTORS_ONLY'].includes(activity.audience)) ||
         activity.churchId === scope.churchId;
       if (!allowed) {
         throw new ForbiddenException('Access denied to this activity');
@@ -198,7 +206,9 @@ export class ActivitiesService {
       actor.permissions.includes('churches:write');
 
     if (activityScope === ActivityScope.COUNCIL && !isCouncil) {
-      throw new ForbiddenException('Only council admins can manage council-wide activities');
+      throw new ForbiddenException(
+        'Only council admins can manage council-wide activities',
+      );
     }
 
     if (
@@ -213,10 +223,14 @@ export class ActivitiesService {
 
   private validateScopePayload(scope: ActivityScope, churchId?: string) {
     if (scope === ActivityScope.CHURCH && !churchId) {
-      throw new BadRequestException('churchId is required for church-scoped activities');
+      throw new BadRequestException(
+        'churchId is required for church-scoped activities',
+      );
     }
     if (scope === ActivityScope.COUNCIL && churchId) {
-      throw new BadRequestException('churchId must be empty for council-scoped activities');
+      throw new BadRequestException(
+        'churchId must be empty for council-scoped activities',
+      );
     }
   }
 

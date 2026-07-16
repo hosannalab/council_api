@@ -2,14 +2,8 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
-  NotFoundException,
 } from '@nestjs/common';
-import { FinanceType, Prisma } from '@prisma/client';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
-import {
-  paginate,
-  paginatedResult,
-} from '../../common/dto/pagination-query.dto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { isSuperAdmin } from '../rbac/rbac.utils';
 import { resolveChurchScopeResponse } from '../../common/scope/church-scope';
@@ -42,7 +36,9 @@ export class FinanceScopeService {
 
   assertChurchInScope(scope: FinanceScope, churchId: string) {
     if (scope.churchId && scope.churchId !== churchId) {
-      throw new ForbiddenException('You can only manage finances of your assigned church');
+      throw new ForbiddenException(
+        'You can only manage finances of your assigned church',
+      );
     }
   }
 }

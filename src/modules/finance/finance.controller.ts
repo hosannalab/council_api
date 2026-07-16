@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { AuthUser } from '../../common/decorators/current-user.decorator';
@@ -36,7 +45,10 @@ export class FinanceController {
 
   @Permissions('finance:read')
   @Get('summary')
-  getSummary(@CurrentUser() user: AuthUser, @Query() query: FinanceSummaryQueryDto) {
+  getSummary(
+    @CurrentUser() user: AuthUser,
+    @Query() query: FinanceSummaryQueryDto,
+  ) {
     return this.transactionsService.getSummary(user, query);
   }
 
@@ -51,7 +63,10 @@ export class FinanceController {
 
   @Permissions('finance:write')
   @Post('categories')
-  createCategory(@CurrentUser() user: AuthUser, @Body() dto: CreateCategoryDto) {
+  createCategory(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: CreateCategoryDto,
+  ) {
     return this.categoriesService.create(user, dto);
   }
 
@@ -82,7 +97,10 @@ export class FinanceController {
 
   @Permissions('finance:write')
   @Post('transactions')
-  createTransaction(@CurrentUser() user: AuthUser, @Body() dto: CreateTransactionDto) {
+  createTransaction(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: CreateTransactionDto,
+  ) {
     return this.transactionsService.create(user, dto);
   }
 

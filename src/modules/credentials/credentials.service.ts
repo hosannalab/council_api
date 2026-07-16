@@ -7,7 +7,10 @@ import {
 import { CredentialStatus, Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
-import { paginate, paginatedResult } from '../../common/dto/pagination-query.dto';
+import {
+  paginate,
+  paginatedResult,
+} from '../../common/dto/pagination-query.dto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { isSuperAdmin } from '../rbac/rbac.utils';
 import {
@@ -15,6 +18,10 @@ import {
   ListCredentialsQueryDto,
   RenewCredentialDto,
 } from './dto/credentials.dto';
+
+function toJsonValue(value: unknown): Prisma.InputJsonValue {
+  return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
 
 const credentialInclude = {
   minister: {
@@ -57,7 +64,10 @@ export class CredentialsService {
 
     const where: Prisma.PastorCredentialWhereInput = { tenantId };
 
-    const scopedMinisterId = await this.resolveListMinisterScope(actor, tenantId);
+    const scopedMinisterId = await this.resolveListMinisterScope(
+      actor,
+      tenantId,
+    );
     if (scopedMinisterId) {
       where.ministerId = scopedMinisterId;
     } else if (query.ministerId) {
@@ -66,7 +76,9 @@ export class CredentialsService {
     if (query.status) where.status = query.status;
     if (query.search?.trim()) {
       where.OR = [
-        { credentialNo: { contains: query.search.trim(), mode: 'insensitive' } },
+        {
+          credentialNo: { contains: query.search.trim(), mode: 'insensitive' },
+        },
         {
           minister: {
             fullName: { contains: query.search.trim(), mode: 'insensitive' },
@@ -145,7 +157,11 @@ export class CredentialsService {
 
     // Suspend existing active credentials for this minister
     await this.prisma.pastorCredential.updateMany({
-      where: { ministerId: dto.ministerId, tenantId, status: CredentialStatus.ACTIVE },
+      where: {
+        ministerId: dto.ministerId,
+        tenantId,
+        status: CredentialStatus.ACTIVE,
+      },
       data: { status: CredentialStatus.SUSPENDED },
     });
 
@@ -156,10 +172,14 @@ export class CredentialsService {
         where: { credentialNo },
       });
       if (existing) {
-        throw new BadRequestException(`El número de credencial "${credentialNo}" ya está registrado.`);
+        throw new BadRequestException(
+          `El número de credencial "${credentialNo}" ya está registrado.`,
+        );
       }
     } else {
-      const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId } });
+      const tenant = await this.prisma.tenant.findUnique({
+        where: { id: tenantId },
+      });
       const year = new Date().getFullYear();
       const rand = Math.floor(1000 + Math.random() * 9000);
       credentialNo = `CRE-${tenant?.slug.toUpperCase() || 'CON'}-${year}-${rand}`;
@@ -191,7 +211,7 @@ export class CredentialsService {
         entity: 'PastorCredential',
         entityId: credential.id,
         before: Prisma.DbNull,
-        after: credential as any,
+        after: toJsonValue(credential),
       },
     });
 
@@ -218,8 +238,8 @@ export class CredentialsService {
         action: 'CREDENTIAL_RENEW',
         entity: 'PastorCredential',
         entityId: id,
-        before: prev as any,
-        after: updated as any,
+        before: toJsonValue(prev),
+        after: toJsonValue(updated),
       },
     });
 
@@ -243,8 +263,8 @@ export class CredentialsService {
         action: 'CREDENTIAL_SUSPEND',
         entity: 'PastorCredential',
         entityId: id,
-        before: prev as any,
-        after: updated as any,
+        before: toJsonValue(prev),
+        after: toJsonValue(updated),
       },
     });
 
@@ -268,8 +288,8 @@ export class CredentialsService {
         action: 'CREDENTIAL_REVOKE',
         entity: 'PastorCredential',
         entityId: id,
-        before: prev as any,
-        after: updated as any,
+        before: toJsonValue(prev),
+        after: toJsonValue(updated),
       },
     });
 
@@ -288,7 +308,11 @@ export class CredentialsService {
 
     // Determine effective status based on expiration
     let status = credential.status;
-    if (status === CredentialStatus.ACTIVE && credential.expiresAt && new Date(credential.expiresAt) < new Date()) {
+    if (
+      status === CredentialStatus.ACTIVE &&
+      credential.expiresAt &&
+      new Date(credential.expiresAt) < new Date()
+    ) {
       status = CredentialStatus.EXPIRED;
     }
 
@@ -354,7 +378,9 @@ export class CredentialsService {
 
   private requireTenantId(actor: AuthUser): string {
     if (isSuperAdmin(actor)) {
-      throw new BadRequestException('Super Admin must operate within a tenant context for credentials');
+      throw new BadRequestException(
+        'Super Admin must operate within a tenant context for credentials',
+      );
     }
     if (!actor.tenantId) {
       throw new ForbiddenException('Tenant context required');

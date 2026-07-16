@@ -19,7 +19,10 @@ async function bootstrap() {
 
   app.use(helmet());
   app.enableCors({
-    origin: (origin, callback) => {
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
       if (!origin) {
         callback(null, true);
         return;
@@ -65,4 +68,5 @@ async function bootstrap() {
   const port = configService.get<number>('port') ?? 3000;
   await app.listen(port);
 }
-bootstrap();
+
+void bootstrap();

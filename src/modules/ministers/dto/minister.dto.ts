@@ -24,7 +24,9 @@ export class ListMinistersQueryDto extends PaginationQueryDto {
   @IsEnum(MinisterStatus)
   status?: MinisterStatus;
 
-  @ApiPropertyOptional({ description: 'Filtrar por iglesia asignada actualmente' })
+  @ApiPropertyOptional({
+    description: 'Filtrar por iglesia asignada actualmente',
+  })
   @IsOptional()
   @IsEntityId()
   churchId?: string;

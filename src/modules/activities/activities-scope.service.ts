@@ -1,4 +1,8 @@
-import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 import { resolveChurchScopeResponse } from '../../common/scope/church-scope';
 import { PrismaService } from '../../prisma/prisma.service';

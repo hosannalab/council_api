@@ -4,7 +4,7 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
-import { resolveChurchScope, resolveChurchScopeResponse } from '../../common/scope/church-scope';
+import { resolveChurchScopeResponse } from '../../common/scope/church-scope';
 import { PrismaService } from '../../prisma/prisma.service';
 import { isSuperAdmin } from '../rbac/rbac.utils';
 
@@ -36,7 +36,9 @@ export class SacramentScopeService {
 
   assertChurchInScope(scope: SacramentScope, churchId: string) {
     if (scope.churchId && scope.churchId !== churchId) {
-      throw new ForbiddenException('You can only manage records of your assigned church');
+      throw new ForbiddenException(
+        'You can only manage records of your assigned church',
+      );
     }
   }
 }

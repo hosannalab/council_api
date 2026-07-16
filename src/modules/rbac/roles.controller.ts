@@ -14,7 +14,11 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { AuthUser } from '../../common/decorators/current-user.decorator';
 import { Permissions } from '../../common/decorators/permissions.decorator';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
-import { CreateRoleDto, ListRolesQueryDto, UpdateRoleDto } from './dto/create-role.dto';
+import {
+  CreateRoleDto,
+  ListRolesQueryDto,
+  UpdateRoleDto,
+} from './dto/create-role.dto';
 import { RolesService } from './roles.service';
 
 @ApiTags('roles')

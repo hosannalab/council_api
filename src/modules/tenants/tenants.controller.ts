@@ -13,7 +13,11 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { AuthUser } from '../../common/decorators/current-user.decorator';
 import { Permissions } from '../../common/decorators/permissions.decorator';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
-import { ListTenantsQueryDto, CreateTenantDto, UpdateTenantDto } from './dto/tenant.dto';
+import {
+  ListTenantsQueryDto,
+  CreateTenantDto,
+  UpdateTenantDto,
+} from './dto/tenant.dto';
 import { TenantsService } from './tenants.service';
 
 @ApiTags('tenants')

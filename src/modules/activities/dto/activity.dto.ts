@@ -1,4 +1,8 @@
-import { ActivityScope, ActivityStatus, ActivityAudience } from '@prisma/client';
+import {
+  ActivityScope,
+  ActivityStatus,
+  ActivityAudience,
+} from '@prisma/client';
 import {
   IsBoolean,
   IsDateString,

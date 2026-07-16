@@ -63,7 +63,11 @@ export class DedicationsService {
   async create(actor: AuthUser, dto: CreateDedicationDto) {
     const scope = await this.scopeService.resolveScope(actor);
     this.scopeService.assertChurchInScope(scope, dto.churchId);
-    await this.validateReferences(scope.tenantId, dto.churchId, dto.officiantId);
+    await this.validateReferences(
+      scope.tenantId,
+      dto.churchId,
+      dto.officiantId,
+    );
 
     const dedication = await this.prisma.childDedication.create({
       data: {
@@ -111,7 +115,9 @@ export class DedicationsService {
     scope: { tenantId: string; churchId?: string },
     query: ListDedicationsQueryDto,
   ): Prisma.ChildDedicationWhereInput {
-    const where: Prisma.ChildDedicationWhereInput = { tenantId: scope.tenantId };
+    const where: Prisma.ChildDedicationWhereInput = {
+      tenantId: scope.tenantId,
+    };
 
     if (scope.churchId) {
       where.churchId = scope.churchId;
@@ -122,7 +128,7 @@ export class DedicationsService {
     if (query.officiantId) where.officiantId = query.officiantId;
 
     if (query.search?.trim()) {
-      where.childName = { contains: query.search!.trim(), mode: 'insensitive' };
+      where.childName = { contains: query.search.trim(), mode: 'insensitive' };
     }
 
     if (query.dateFrom || query.dateTo) {

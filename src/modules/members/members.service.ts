@@ -12,7 +12,7 @@ import {
   paginatedResult,
 } from '../../common/dto/pagination-query.dto';
 import { PrismaService } from '../../prisma/prisma.service';
-import { resolveChurchScope, resolveChurchScopeResponse } from '../../common/scope/church-scope';
+import { resolveChurchScopeResponse } from '../../common/scope/church-scope';
 import { isSuperAdmin } from '../rbac/rbac.utils';
 import {
   CreateMemberCommentDto,
@@ -93,8 +93,12 @@ export class MembersService {
       throw new BadRequestException('Church not found');
     }
 
+    type MemberWithChurch = Prisma.MemberGetPayload<{
+      include: typeof memberInclude;
+    }>;
+
     const member = await this.prisma.$transaction(async (tx) => {
-      let created;
+      let created: MemberWithChurch;
       try {
         created = await tx.member.create({
           data: {
@@ -395,7 +399,9 @@ export class MembersService {
 
   private assertChurchInScope(scope: MemberScope, churchId: string) {
     if (scope.churchId && scope.churchId !== churchId) {
-      throw new ForbiddenException('You can only manage members of your assigned church');
+      throw new ForbiddenException(
+        'You can only manage members of your assigned church',
+      );
     }
   }
 

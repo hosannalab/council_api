@@ -13,7 +13,11 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { AuthUser } from '../../common/decorators/current-user.decorator';
 import { Permissions } from '../../common/decorators/permissions.decorator';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
-import { CreateUserDto, ListUsersQueryDto, UpdateUserDto } from './dto/user.dto';
+import {
+  CreateUserDto,
+  ListUsersQueryDto,
+  UpdateUserDto,
+} from './dto/user.dto';
 import { UsersService } from './users.service';
 
 @ApiTags('users')

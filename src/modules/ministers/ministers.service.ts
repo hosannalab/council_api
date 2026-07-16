@@ -89,7 +89,9 @@ export class MinistersService {
           fullName: dto.fullName.trim(),
           identityDocument: dto.identityDocument.trim(),
           rank: dto.rank,
-          ordinationAt: dto.ordinationAt ? new Date(dto.ordinationAt) : undefined,
+          ordinationAt: dto.ordinationAt
+            ? new Date(dto.ordinationAt)
+            : undefined,
           status: dto.status,
         },
         include: ministerInclude,
@@ -128,7 +130,12 @@ export class MinistersService {
     const minister = await this.getScopedMinister(actor, id);
 
     await this.prisma.$transaction(async (tx) => {
-      await this.closeActiveAssignment(tx, minister.id, minister.tenantId, 'Deactivated');
+      await this.closeActiveAssignment(
+        tx,
+        minister.id,
+        minister.tenantId,
+        'Deactivated',
+      );
 
       if (minister.rank === MinisterRank.PASTOR) {
         await tx.church.updateMany({
@@ -187,7 +194,9 @@ export class MinistersService {
 
     const activeAssignment = minister.assignments[0];
     if (activeAssignment?.churchId === dto.churchId) {
-      throw new BadRequestException('Minister is already assigned to this church');
+      throw new BadRequestException(
+        'Minister is already assigned to this church',
+      );
     }
 
     const startedAt = dto.startedAt ? new Date(dto.startedAt) : new Date();
@@ -204,7 +213,10 @@ export class MinistersService {
 
         if (minister.rank === MinisterRank.PASTOR) {
           await tx.church.updateMany({
-            where: { id: activeAssignment.churchId, currentPastorId: minister.id },
+            where: {
+              id: activeAssignment.churchId,
+              currentPastorId: minister.id,
+            },
             data: { currentPastorId: null },
           });
         }

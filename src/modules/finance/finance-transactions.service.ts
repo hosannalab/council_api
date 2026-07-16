@@ -67,7 +67,11 @@ export class FinanceTransactionsService {
     this.scopeService.assertChurchInScope(scope, dto.churchId);
     this.validateTransaction(dto.type, dto.justification);
 
-    await this.validateChurchAndCategory(scope.tenantId, dto.churchId, dto.categoryId);
+    await this.validateChurchAndCategory(
+      scope.tenantId,
+      dto.churchId,
+      dto.categoryId,
+    );
 
     const tx = await this.prisma.financeTransaction.create({
       data: {
@@ -78,7 +82,8 @@ export class FinanceTransactionsService {
         date: new Date(dto.date),
         categoryId: dto.categoryId,
         description: dto.description,
-        justification: dto.type === FinanceType.EXPENSE ? dto.justification : null,
+        justification:
+          dto.type === FinanceType.EXPENSE ? dto.justification : null,
         createdById: actor.id,
       },
       include: txInclude,
@@ -90,7 +95,8 @@ export class FinanceTransactionsService {
   async update(actor: AuthUser, id: string, dto: UpdateTransactionDto) {
     const existing = await this.getScopedTransaction(actor, id);
     const type = dto.type ?? existing.type;
-    const justification = dto.justification ?? existing.justification ?? undefined;
+    const justification =
+      dto.justification ?? existing.justification ?? undefined;
 
     this.validateTransaction(type, justification);
 
@@ -144,7 +150,10 @@ export class FinanceTransactionsService {
     let totalIncome = 0;
     let totalExpense = 0;
     const byType: Record<string, number> = {};
-    const byChurch: Record<string, { churchId: string; income: number; expense: number }> = {};
+    const byChurch: Record<
+      string,
+      { churchId: string; income: number; expense: number }
+    > = {};
 
     for (const t of transactions) {
       const amount = Number(t.amount);
@@ -195,7 +204,9 @@ export class FinanceTransactionsService {
     scope: { tenantId: string; churchId?: string },
     query: ListTransactionsQueryDto,
   ): Prisma.FinanceTransactionWhereInput {
-    const where: Prisma.FinanceTransactionWhereInput = { tenantId: scope.tenantId };
+    const where: Prisma.FinanceTransactionWhereInput = {
+      tenantId: scope.tenantId,
+    };
 
     if (scope.churchId) {
       where.churchId = scope.churchId;
@@ -218,7 +229,9 @@ export class FinanceTransactionsService {
   private validateTransaction(type: FinanceType, justification?: string) {
     if (type === FinanceType.EXPENSE) {
       if (!justification?.trim()) {
-        throw new BadRequestException('Expense transactions require justification');
+        throw new BadRequestException(
+          'Expense transactions require justification',
+        );
       }
     }
   }

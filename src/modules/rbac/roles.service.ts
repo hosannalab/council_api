@@ -10,7 +10,11 @@ import {
   paginatedResult,
 } from '../../common/dto/pagination-query.dto';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateRoleDto, ListRolesQueryDto, UpdateRoleDto } from './dto/create-role.dto';
+import {
+  CreateRoleDto,
+  ListRolesQueryDto,
+  UpdateRoleDto,
+} from './dto/create-role.dto';
 import { isSuperAdmin, SYSTEM_ROLE_NAMES } from './rbac.utils';
 
 const roleInclude = {
@@ -204,7 +208,9 @@ export class RolesService {
     tenantId: string | null;
     name: string;
     description: string | null;
-    permissions: Array<{ permission: { id: string; key: string; label: string } }>;
+    permissions: Array<{
+      permission: { id: string; key: string; label: string };
+    }>;
     _count: { users: number };
   }) {
     return {

@@ -21,17 +21,23 @@ export class ListMembersQueryDto extends PaginationQueryDto {
   @IsBoolean()
   isActive?: boolean;
 
-  @ApiPropertyOptional({ description: 'Solo concilio; pastores ignoran y ven su iglesia' })
+  @ApiPropertyOptional({
+    description: 'Solo concilio; pastores ignoran y ven su iglesia',
+  })
   @IsOptional()
   @IsEntityId()
   churchId?: string;
 
-  @ApiPropertyOptional({ description: 'Filtrar miembros creados desde (ISO date)' })
+  @ApiPropertyOptional({
+    description: 'Filtrar miembros creados desde (ISO date)',
+  })
   @IsOptional()
   @IsDateString()
   createdFrom?: string;
 
-  @ApiPropertyOptional({ description: 'Filtrar miembros creados hasta (ISO date)' })
+  @ApiPropertyOptional({
+    description: 'Filtrar miembros creados hasta (ISO date)',
+  })
   @IsOptional()
   @IsDateString()
   createdTo?: string;

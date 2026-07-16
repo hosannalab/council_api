@@ -31,7 +31,10 @@ export class MinistersController {
 
   @Permissions('ministers:read')
   @Get()
-  findAll(@CurrentUser() user: AuthUser, @Query() query: ListMinistersQueryDto) {
+  findAll(
+    @CurrentUser() user: AuthUser,
+    @Query() query: ListMinistersQueryDto,
+  ) {
     return this.ministersService.findAll(user, query);
   }
 

@@ -63,7 +63,10 @@ export class CreateBaptismDto {
   @IsEntityId()
   officiantId?: string;
 
-  @ApiPropertyOptional({ type: [String], description: 'Nombres de participantes' })
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Nombres de participantes',
+  })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
