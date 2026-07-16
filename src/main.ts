@@ -2,6 +2,7 @@ import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { apiReference } from '@scalar/nestjs-api-reference';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -17,7 +18,22 @@ async function bootstrap() {
   const corsOrigins = configService.get<string[]>('corsOrigins') ?? [];
   const nodeEnv = configService.get<string>('nodeEnv') ?? 'development';
 
-  app.use(helmet());
+  // Allow Scalar CDN assets while keeping Helmet enabled.
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net'],
+          scriptSrc: ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net'],
+          imgSrc: ["'self'", 'data:', 'blob:', 'https://cdn.jsdelivr.net'],
+          fontSrc: ["'self'", 'data:', 'https://cdn.jsdelivr.net'],
+          connectSrc: ["'self'"],
+          workerSrc: ["'self'", 'blob:'],
+        },
+      },
+    }),
+  );
   app.enableCors({
     origin: (
       origin: string | undefined,
@@ -56,14 +72,21 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(new TransformInterceptor());
 
-  const swaggerConfig = new DocumentBuilder()
+  const openApiConfig = new DocumentBuilder()
     .setTitle('Council API')
     .setDescription('API para la plataforma de concilios')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/docs', app, document);
+  const document = SwaggerModule.createDocument(app, openApiConfig);
+
+  app.use(
+    '/api/docs',
+    apiReference({
+      content: document,
+      pageTitle: 'Council API',
+    }),
+  );
 
   const port = configService.get<number>('port') ?? 3000;
   await app.listen(port);
