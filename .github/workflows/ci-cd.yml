@@ -229,7 +229,7 @@ jobs:
               -e JWT_REFRESH_SECRET="${{ vars.JWT_REFRESH_SECRET }}" \
               -e JWT_ACCESS_TTL_SECONDS="${{ vars.JWT_ACCESS_TTL_SECONDS }}" \
               -e JWT_REFRESH_TTL_SECONDS="${{ vars.JWT_REFRESH_TTL_SECONDS }}" \
-              -e SMTP_HOST="${{ secrets.SMTP_HOST }}" \
+              -e SMTP_HOST="${{ vars.SMTP_HOST }}" \
               -e SMTP_PORT="${{ vars.SMTP_PORT }}" \
               -e SMTP_USER="${{ secrets.SMTP_USER }}" \
               -e SMTP_PASS="${{ secrets.SMTP_PASS }}" \
