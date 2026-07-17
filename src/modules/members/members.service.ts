@@ -22,6 +22,11 @@ import {
   TransferMemberDto,
   UpdateMemberDto,
 } from './dto/member.dto';
+import {
+  MemberLogMetadata,
+  parseMemberLogMetadata,
+  serializeMemberLogMetadata,
+} from './member-log-metadata';
 
 const memberInclude = {
   church: { select: { id: true, name: true, city: true } },
@@ -131,7 +136,7 @@ export class MembersService {
         tenantId: scope.tenantId,
         memberId: created.id,
         event: MemberLogEvent.CREATED,
-        detail: `Registered at ${church.name}`,
+        detail: serializeMemberLogMetadata({ churchName: church.name }),
         actorId: actor.id,
       });
 
@@ -152,20 +157,43 @@ export class MembersService {
       return this.reactivate(actor, id, dto);
     }
 
-    const updated = await this.prisma.$transaction(async (tx) => {
-      const result = await tx.member.update({
-        where: { id },
-        data: this.memberUpdateData(dto),
-        include: memberInclude,
-      });
+    const updateData = this.memberUpdateData(dto);
+    const hasChanges = Object.values(updateData).some(
+      (value) => value !== undefined,
+    );
+    if (!hasChanges) {
+      return this.toDetailResponse(member);
+    }
 
-      await this.writeLog(tx, {
-        tenantId: member.tenantId,
-        memberId: id,
-        event: MemberLogEvent.UPDATED,
-        detail: 'Profile updated',
-        actorId: actor.id,
-      });
+    const changes = this.collectFieldChanges(member, dto);
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      let result;
+      try {
+        result = await tx.member.update({
+          where: { id },
+          data: updateData,
+          include: memberInclude,
+        });
+      } catch (error) {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002'
+        ) {
+          throw new ConflictException('Identity document already registered');
+        }
+        throw error;
+      }
+
+      if (changes.length > 0) {
+        await this.writeLog(tx, {
+          tenantId: member.tenantId,
+          memberId: id,
+          event: MemberLogEvent.UPDATED,
+          detail: serializeMemberLogMetadata({ changes }),
+          actorId: actor.id,
+        });
+      }
 
       return result;
     });
@@ -236,6 +264,9 @@ export class MembersService {
         tenantId: member.tenantId,
         memberId: id,
         event: MemberLogEvent.ACTIVATED,
+        detail: serializeMemberLogMetadata({
+          churchName: member.church.name,
+        }),
         actorId: actor.id,
       });
 
@@ -292,7 +323,11 @@ export class MembersService {
         tenantId: member.tenantId,
         memberId: id,
         event: MemberLogEvent.TRANSFERRED,
-        detail: `Moved to ${church.name}`,
+        detail: serializeMemberLogMetadata({
+          fromChurchName: member.church.name,
+          churchName: church.name,
+          reason: dto.reason?.trim() || undefined,
+        }),
         actorId: actor.id,
       });
 
@@ -305,31 +340,39 @@ export class MembersService {
   async getHistory(actor: AuthUser, id: string) {
     await this.getScopedMember(actor, id);
 
-    const history = await this.prisma.memberChurchHistory.findMany({
-      where: { memberId: id },
-      include: { church: { select: { id: true, name: true, city: true } } },
-      orderBy: { startedAt: 'desc' },
-    });
-
-    return history.map((h) => ({
-      id: h.id,
-      church: h.church,
-      startedAt: h.startedAt,
-      endedAt: h.endedAt,
-      reason: h.reason,
-      isCurrent: h.endedAt === null,
-    }));
-  }
-
-  async getLogs(actor: AuthUser, id: string) {
-    await this.getScopedMember(actor, id);
-
     const logs = await this.prisma.memberLog.findMany({
       where: { memberId: id },
       orderBy: { createdAt: 'desc' },
     });
 
-    return logs;
+    const actorIds = [
+      ...new Set(logs.map((log) => log.actorId).filter(Boolean)),
+    ] as string[];
+
+    const actors =
+      actorIds.length > 0
+        ? await this.prisma.user.findMany({
+            where: { id: { in: actorIds } },
+            select: { id: true, fullName: true },
+          })
+        : [];
+
+    const actorMap = new Map(actors.map((user) => [user.id, user]));
+
+    return logs.map((log) => {
+      const { metadata, legacyDetail } = parseMemberLogMetadata(log.detail);
+
+      return {
+        id: log.id,
+        event: log.event,
+        metadata:
+          log.event === MemberLogEvent.COMMENT_ADDED ? null : metadata,
+        legacyDetail:
+          log.event === MemberLogEvent.COMMENT_ADDED ? null : legacyDetail,
+        actor: log.actorId ? (actorMap.get(log.actorId) ?? null) : null,
+        createdAt: log.createdAt,
+      };
+    });
   }
 
   async getComments(actor: AuthUser, id: string) {
@@ -366,8 +409,7 @@ export class MembersService {
       data: {
         tenantId: member.tenantId,
         memberId: id,
-        event: 'COMMENT_ADDED',
-        detail: 'Comment added to member profile',
+        event: MemberLogEvent.COMMENT_ADDED,
         actorId: actor.id,
       },
     });
@@ -477,6 +519,7 @@ export class MembersService {
       fullName: dto?.fullName?.trim(),
       firstName: this.text(dto?.firstName),
       lastName: this.text(dto?.lastName),
+      identityDocument: dto?.identityDocument?.trim(),
       maritalStatus: dto?.maritalStatus,
       profession: this.text(dto?.profession),
       workplace: this.text(dto?.workplace),
@@ -491,6 +534,90 @@ export class MembersService {
       baptismDate: this.date(dto?.baptismDate),
       workGroup: this.text(dto?.workGroup),
     };
+  }
+
+  private serializeLogValue(value: unknown): string | null {
+    if (value === undefined || value === null) return null;
+    if (value instanceof Date) return value.toISOString().split('T')[0];
+    const text = String(value).trim();
+    return text.length > 0 ? text : null;
+  }
+
+  private collectFieldChanges(
+    member: {
+      fullName: string;
+      firstName: string | null;
+      lastName: string | null;
+      identityDocument: string;
+      maritalStatus: string | null;
+      profession: string | null;
+      workplace: string | null;
+      addressLine: string | null;
+      neighborhood: string | null;
+      sector: string | null;
+      email: string | null;
+      birthDate: Date | null;
+      phone: string | null;
+      mobilePhone: string | null;
+      conversionDate: Date | null;
+      baptismDate: Date | null;
+      workGroup: string | null;
+    },
+    dto: UpdateMemberDto,
+  ): NonNullable<MemberLogMetadata['changes']> {
+    const changes: NonNullable<MemberLogMetadata['changes']> = [];
+
+    const addIfChanged = (field: string, before: unknown, after: unknown) => {
+      if (after === undefined) return;
+      const from = this.serializeLogValue(before);
+      const to = this.serializeLogValue(after);
+      if (from !== to) {
+        changes.push({ field, from, to });
+      }
+    };
+
+    addIfChanged('fullName', member.fullName, dto.fullName?.trim());
+    addIfChanged('firstName', member.firstName, this.text(dto.firstName));
+    addIfChanged('lastName', member.lastName, this.text(dto.lastName));
+    addIfChanged(
+      'identityDocument',
+      member.identityDocument,
+      dto.identityDocument?.trim(),
+    );
+    addIfChanged('maritalStatus', member.maritalStatus, dto.maritalStatus);
+    addIfChanged('profession', member.profession, this.text(dto.profession));
+    addIfChanged('workplace', member.workplace, this.text(dto.workplace));
+    addIfChanged('addressLine', member.addressLine, this.text(dto.addressLine));
+    addIfChanged(
+      'neighborhood',
+      member.neighborhood,
+      this.text(dto.neighborhood),
+    );
+    addIfChanged('sector', member.sector, this.text(dto.sector));
+    addIfChanged('email', member.email, this.text(dto.email));
+    addIfChanged('birthDate', member.birthDate, this.date(dto.birthDate));
+    addIfChanged('phone', member.phone, this.text(dto.phone));
+    addIfChanged(
+      'mobilePhone',
+      member.mobilePhone,
+      this.text(dto.mobilePhone),
+    );
+    addIfChanged(
+      'conversionDate',
+      member.conversionDate,
+      this.date(dto.conversionDate),
+    );
+    addIfChanged('baptismDate', member.baptismDate, this.date(dto.baptismDate));
+    addIfChanged('workGroup', member.workGroup, this.text(dto.workGroup));
+
+    if (changes.some((change) => change.field === 'fullName')) {
+      return changes.filter(
+        (change) =>
+          change.field !== 'firstName' && change.field !== 'lastName',
+      );
+    }
+
+    return changes;
   }
 
   private toListResponse(member: {

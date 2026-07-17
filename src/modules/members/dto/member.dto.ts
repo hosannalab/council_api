@@ -157,6 +157,13 @@ export class UpdateMemberDto {
   @MaxLength(120)
   fullName?: string;
 
+  @ApiPropertyOptional({ description: 'Documento de identidad unico en el concilio' })
+  @IsOptional()
+  @IsString()
+  @MinLength(3)
+  @MaxLength(30)
+  identityDocument?: string;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
@@ -275,4 +282,5 @@ export const MemberLogEvent = {
   ACTIVATED: 'ACTIVATED',
   DEACTIVATED: 'DEACTIVATED',
   TRANSFERRED: 'TRANSFERRED',
+  COMMENT_ADDED: 'COMMENT_ADDED',
 } as const;

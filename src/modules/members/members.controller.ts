@@ -86,12 +86,6 @@ export class MembersController {
   }
 
   @Permissions('members:read')
-  @Get(':id/logs')
-  getLogs(@CurrentUser() user: AuthUser, @Param('id') id: string) {
-    return this.membersService.getLogs(user, id);
-  }
-
-  @Permissions('members:read')
   @Get(':id/comments')
   getComments(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.membersService.getComments(user, id);

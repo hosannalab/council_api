@@ -58,7 +58,9 @@ async function main() {
     });
   }
 
-  await prisma.rolePermission.deleteMany({ where: { roleId: superAdminRole.id } });
+  await prisma.rolePermission.deleteMany({
+    where: { roleId: superAdminRole.id },
+  });
   await prisma.rolePermission.createMany({
     data: permissionIds.map((permissionId) => ({
       roleId: superAdminRole.id,
@@ -90,7 +92,9 @@ async function main() {
     (p) => p.key !== 'tenants:manage',
   );
 
-  await prisma.rolePermission.deleteMany({ where: { roleId: councilAdminRole.id } });
+  await prisma.rolePermission.deleteMany({
+    where: { roleId: councilAdminRole.id },
+  });
   await prisma.rolePermission.createMany({
     data: councilPermissions.map((p) => ({
       roleId: councilAdminRole.id,
@@ -113,7 +117,9 @@ async function main() {
   });
 
   await prisma.userRole.upsert({
-    where: { userId_roleId: { userId: superAdmin.id, roleId: superAdminRole.id } },
+    where: {
+      userId_roleId: { userId: superAdmin.id, roleId: superAdminRole.id },
+    },
     update: {},
     create: { userId: superAdmin.id, roleId: superAdminRole.id },
   });
@@ -136,7 +142,9 @@ async function main() {
   });
 
   await prisma.userRole.upsert({
-    where: { userId_roleId: { userId: councilAdmin.id, roleId: councilAdminRole.id } },
+    where: {
+      userId_roleId: { userId: councilAdmin.id, roleId: councilAdminRole.id },
+    },
     update: {},
     create: { userId: councilAdmin.id, roleId: councilAdminRole.id },
   });
@@ -333,7 +341,7 @@ async function main() {
   console.log('Seed completed.');
   console.log('Super Admin: superadmin@council.local / Admin123!');
   console.log('Council Admin: admin@demo-concilio.local / Admin123!');
-  console.log('Pastor Demo: pastor@demo-concilio.local / Admin123!');
+  console.log('Pastor Demo: pastor@demo-concilio.local /  ');
   console.log('Demo church:', church.name);
 }
 

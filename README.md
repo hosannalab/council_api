@@ -90,7 +90,7 @@ Un ministro solo puede tener **una asignación activa** (`endedAt` null). Pastor
 | GET/POST/PATCH | `/members` | `members:read` / `members:write` |
 | POST | `/members/:id/transfer` | `members:write` |
 
-Miembros no se eliminan; `PATCH .../deactivate`. Bitácora automática en cada evento.
+Miembros no se eliminan; `PATCH .../deactivate`. Historial automático en cada evento (`GET .../history`).
 
 ## Finanzas
 
